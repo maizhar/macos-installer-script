@@ -1,38 +1,87 @@
 #!/bin/bash
-echo "==============================="
-echo "🚀 Menjalankan Instalasi macOS Sonoma"
-echo "==============================="
+# =========================================
+# macOS SONOMA USB INSTALLER MAKER (Recovery Mode)
+# by Maizhar
+# =========================================
 
-# Deteksi disk internal utama
-TARGET_DISK=$(diskutil list | grep -E "internal.*physical" | awk '{print $1}')
+echo "======================================="
+echo "   macOS SONOMA USB INSTALLER MAKER"
+echo "======================================="
+echo
 
-if [ -z "$TARGET_DISK" ]; then
-  echo "❌ Tidak menemukan disk internal fisik. Pastikan kamu di Recovery Mode dan disk internal terdeteksi."
-  exit 1
+# 1️⃣ Cek koneksi internet
+echo "🌐 Mengecek koneksi internet..."
+ping -c 1 apple.com &> /dev/null
+if [ $? -ne 0 ]; then
+    echo "❌ Tidak ada koneksi internet!"
+    echo "➡️  Sambungkan Wi-Fi di kanan atas dulu, lalu jalankan lagi."
+    exit 1
+fi
+echo "✅ Internet aktif."
+echo
+
+# 2️⃣ Tampilkan drive eksternal
+echo "🔍 Mendeteksi drive eksternal..."
+diskutil list external
+echo
+read -p "Masukkan identifier disk USB kamu (contoh: disk2): " usb
+if [ -z "$usb" ]; then
+    echo "❌ Tidak ada disk dipilih."
+    exit 1
 fi
 
-echo "✅ Disk internal ditemukan: $TARGET_DISK"
-echo "🔧 Melepas semua volume di disk internal..."
-diskutil unmountDisk force $TARGET_DISK >/dev/null 2>&1
-
-echo "💽 Menghapus dan memformat ulang menjadi APFS..."
-diskutil eraseDisk APFS "Macintosh HD" $TARGET_DISK >/dev/null 2>&1
-
-# Pastikan installer USB tersedia dan sesuai target kamu
-if [ ! -d "/Volumes/Install macOS Sonoma" ]; then
-  echo "❌ Tidak menemukan USB installer di /Volumes/Install macOS Sonoma"
-  echo "🔎 Pastikan USB bernama tepat: Install macOS Sonoma"
-  echo "💡 Cek dengan perintah: ls /Volumes"
-  exit 1
+# 3️⃣ Konfirmasi format
+echo
+read -p "⚠️ Semua data di /dev/$usb akan dihapus. Lanjut? (y/n): " confirm
+if [[ "$confirm" != [yY] ]]; then
+    echo "❌ Dibatalkan oleh pengguna."
+    exit 0
 fi
 
-echo "📦 Menjalankan startosinstall dari USB..."
-/Volumes/"Install macOS Sonoma"/Contents/Resources/startosinstall \
-  --volume /Volumes/"Macintosh HD" \
-  --eraseinstall \
-  --agreetolicense \
-  --nointeraction
+# 4️⃣ Format USB
+echo
+echo "🧹 Memformat USB..."
+diskutil eraseDisk APFS "SonomaUSB" GPT /dev/$usb
+if [ $? -ne 0 ]; then
+    echo "❌ Gagal memformat USB. Coba ulangi."
+    exit 1
+fi
+echo "✅ USB berhasil diformat sebagai /Volumes/SonomaUSB"
+echo
 
-echo "🕒 Proses instalasi sedang berjalan..."
-echo "💡 Mac akan restart otomatis dan melanjutkan instalasi."
-echo "✅ Jangan cabut USB sampai Mac restart untuk pertama kalinya!"
+# 5️⃣ Download installer macOS Sonoma
+echo "⬇️ Mengunduh macOS Sonoma (butuh waktu lama, tergantung koneksi)..."
+softwareupdate --fetch-full-installer --full-installer-version 14.0
+if [ $? -ne 0 ]; then
+    echo "❌ Gagal mengunduh installer macOS Sonoma."
+    exit 1
+fi
+echo "✅ Installer berhasil diunduh ke /Applications."
+echo
+
+# 6️⃣ Cek installer
+if [ ! -d "/Applications/Install macOS Sonoma.app" ]; then
+    echo "❌ Installer tidak ditemukan setelah diunduh."
+    exit 1
+fi
+
+# 7️⃣ Buat USB installer
+echo "⚙️ Membuat USB installer di /Volumes/SonomaUSB ..."
+echo "Proses ini bisa memakan waktu 10–30 menit, harap tunggu."
+echo
+
+sudo /Applications/Install\ macOS\ Sonoma.app/Contents/Resources/createinstallmedia --volume /Volumes/SonomaUSB | while read -r line; do
+    echo "$line"
+    if [[ "$line" =~ ([0-9]+)% ]]; then
+        progress=${BASH_REMATCH[1]}
+        bar=$(printf "%0.s#" $(seq 1 $((progress / 2))))
+        spaces=$(printf "%0.s " $(seq 1 $((50 - progress / 2))))
+        echo -ne "\r[$bar$spaces] $progress%"
+    fi
+done
+
+echo
+echo
+echo "✅ Selesai!"
+echo "💽 USB kamu sekarang sudah menjadi installer macOS Sonoma."
+echo "➡️ Colokkan ke Mac lain, lalu tekan OPTION saat boot untuk memulai instalasi."
