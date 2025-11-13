@@ -1,0 +1,34 @@
+-bash-3.2# #!/bin/bash
+-bash-3.2# # Script untuk mengecek daftar USB drive yang terpasang
+-bash-3.2# 
+-bash-3.2# echo "=== Mengecek USB drive yang terhubung ==="
+=== Mengecek USB drive yang terhubung ===
+-bash-3.2# diskutil list external
+/dev/disk4 (disk image):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        +2.5 GB     disk4
+   1:                 Apple_APFS Container disk5         2.5 GB     disk4s1
+
+/dev/disk5 (synthesized):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      APFS Container Scheme -                      +2.5 GB     disk5
+                                 Physical Store disk4s1
+   1:                APFS Volume macOS Base System       2.4 GB     disk5s1
+
+/dev/disk6 (external, physical):
+   #:                       TYPE NAME                    SIZE       IDENTIFIER
+   0:      GUID_partition_scheme                        *128.0 GB   disk6
+   1:         Microsoft Reserved                         16.8 MB    disk6s1
+   2:                  Apple_HFS Install macOS Sonoma    127.9 GB   disk6s2
+                    (free space)                         135.6 MB   -
+
+-bash-3.2# 
+-bash-3.2# echo
+
+-bash-3.2# echo "Jika kamu mau lihat detail salah satu USB, ketik perintah ini:"
+Jika kamu mau lihat detail salah satu USB, ketik perintah ini:
+-bash-3.2# echo "diskutil info /dev/diskX"
+diskutil info /dev/diskX
+-bash-3.2# echo "(Ganti X dengan nomor disk kamu, misalnya disk2)"
+
+
